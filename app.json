@@ -3,6 +3,11 @@
     "name": "mobile",
     "slug": "mobile",
     "owner": "austinpaw",
+    "extra": {
+      "eas": {
+        "projectId": "ec3c89f5-2039-4a14-a1fc-22dd28714285"
+      }
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
