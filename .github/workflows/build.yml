@@ -3,6 +3,7 @@ name: EAS Build
 on:
   push:
     branches:
+      - master
       - main
       - develop
   workflow_dispatch:
@@ -60,8 +61,8 @@ jobs:
             eas build --platform $PLATFORM --profile $PROFILE --non-interactive
           fi
 
-      - name: Build on EAS (push to main → preview)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Build on EAS (push to main/master → preview)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         run: eas build --platform all --profile preview --non-interactive
 
       - name: Build on EAS (push to develop → development)
