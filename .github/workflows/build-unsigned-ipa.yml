@@ -9,7 +9,7 @@ on:
 jobs:
   build-ios:
     name: Build Unsigned IPA
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
       - name: Checkout
@@ -49,14 +49,10 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-            SWIFT_STRICT_CONCURRENCY=minimal \
-            OTHER_SWIFT_FLAGS="-strict-concurrency=minimal" \
-            | xcpretty || true
+            | xcpretty
           
-          # Verify archive was created
           if [ ! -d "build/mobile.xcarchive" ]; then
-            echo "Archive failed - checking for .app directly"
+            echo "Archive failed"
             exit 1
           fi
 
