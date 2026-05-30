@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/lib/theme";
 
@@ -42,17 +43,37 @@ export function ScreenHeader({
 
       <View style={screenHeaderStyles.right}>
         {action ? (
-          <Pressable
-            onPress={action.onPress}
-            hitSlop={8}
-            style={screenHeaderStyles.trashBtn}
-          >
-            <Ionicons
-              name="trash-outline"
-              size={22}
-              color={theme.colors.accent}
-            />
-          </Pressable>
+          Platform.OS === 'ios' && isGlassEffectAPIAvailable() ? (
+            <GlassView
+              style={screenHeaderStyles.trashGlass}
+              glassEffectStyle="regular"
+              isInteractive
+            >
+              <Pressable
+                onPress={action.onPress}
+                hitSlop={8}
+                style={screenHeaderStyles.trashBtn}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={20}
+                  color={theme.colors.accent}
+                />
+              </Pressable>
+            </GlassView>
+          ) : (
+            <Pressable
+              onPress={action.onPress}
+              hitSlop={8}
+              style={screenHeaderStyles.trashBtn}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={22}
+                color={theme.colors.accent}
+              />
+            </Pressable>
+          )
         ) : null}
 
         {accountButton ? (
@@ -230,10 +251,16 @@ const screenHeaderStyles = StyleSheet.create({
     fontWeight: "700",
   },
   trashBtn: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
+  },
+  trashGlass: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    overflow: "hidden",
   },
   accountBtn: {
     width: 34,

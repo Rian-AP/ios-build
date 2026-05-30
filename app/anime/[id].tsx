@@ -1,4 +1,5 @@
 import { Picker } from "@/lib/platform-picker";
+import { GlassView, GlassContainer, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEventListener } from "expo";
 import { BlurView } from "expo-blur";
@@ -1243,6 +1244,9 @@ export default function AnimeDetailsScreen() {
     selectedDownload?.localPlaylistUri,
     selectedEpisodeId,
     selectedTeamSlug,
+    // Re-resolve when any download for this episode completes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    downloadItems.find(i => i.episodeId === selectedEpisodeId && i.status === 'completed')?.localPlaylistUri,
   ]);
 
   const videoSource = useMemo(() => {
@@ -3270,128 +3274,130 @@ export default function AnimeDetailsScreen() {
             >
               {!playerOnlyLaunchActive ? (
                 <View style={styles.playerControls}>
-                  {/* Episode selector */}
-                  {Platform.OS === "ios" ? (
-                    <Host matchContents style={styles.selectorCardHost}>
-                      <Menu
-                        label={selectedEpisode
-                          ? displayEpisodeLabel(selectedEpisode, t("anime.episodeFallbackTitle", { number: selectedEpisode.episodeNumber }))
-                          : t("anime.openSelector")}
-                        systemImage="play.rectangle"
-                      >
-                        {(pageData?.episodes || []).map((episode) => (
-                          <SwiftButton
-                            key={episode.id}
-                            label={displayEpisodeLabel(episode, t("anime.episodeFallbackTitle", { number: episode.episodeNumber }))}
-                            systemImage={episode.id === selectedEpisodeId ? "checkmark.circle.fill" : undefined}
-                            onPress={() => handleSelectEpisode(episode)}
-                          />
-                        ))}
-                      </Menu>
-                    </Host>
-                  ) : (
-                    <Pressable
-                      style={styles.selectorCard}
-                      onPress={openEpisodeSelector}
-                    >
-                      <View style={[styles.selectorCardIcon, { backgroundColor: theme.colors.accentSurface }]}>
-                        <Ionicons name="play-circle-outline" size={18} color={theme.colors.accent} />
-                      </View>
-                      <View style={styles.selectorCardBody}>
-                        <Text style={styles.selectorCardLabel}>{t("anime.selectEpisode")}</Text>
-                        <Text style={styles.selectorCardValue} numberOfLines={1}>
-                          {selectedEpisode
-                            ? displayEpisodeLabel(selectedEpisode, t("anime.episodeFallbackTitle", { number: selectedEpisode.episodeNumber }))
-                            : t("anime.openSelector")}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color={theme.colors.muted} />
-                    </Pressable>
-                  )}
+                  {/* Three selectors in one row with Liquid Glass container */}
+                  {(() => {
+                    const useGlass = Platform.OS === 'ios' && isGlassEffectAPIAvailable();
+                    const row = (
+                      <View style={styles.selectorRow}>
+                        {/* Episode selector */}
+                        {Platform.OS === "ios" ? (
+                          <Host matchContents style={styles.selectorRowItem}>
+                            <Menu
+                              label={selectedEpisode
+                                ? displayEpisodeLabel(selectedEpisode, t("anime.episodeFallbackTitle", { number: selectedEpisode.episodeNumber }))
+                                : t("anime.openSelector")}
+                              systemImage="play.rectangle"
+                            >
+                              {(pageData?.episodes || []).map((episode) => (
+                                <SwiftButton
+                                  key={episode.id}
+                                  label={displayEpisodeLabel(episode, t("anime.episodeFallbackTitle", { number: episode.episodeNumber }))}
+                                  systemImage={episode.id === selectedEpisodeId ? "checkmark.circle.fill" : undefined}
+                                  onPress={() => handleSelectEpisode(episode)}
+                                />
+                              ))}
+                            </Menu>
+                          </Host>
+                        ) : (
+                          <Pressable style={styles.selectorRowItem} onPress={openEpisodeSelector}>
+                            <Ionicons name="play-circle-outline" size={15} color={theme.colors.accent} />
+                            <Text style={styles.selectorRowText} numberOfLines={1}>
+                              {selectedEpisode
+                                ? `#${selectedEpisode.episodeNumber}`
+                                : t("anime.selectEpisode")}
+                            </Text>
+                          </Pressable>
+                        )}
 
-                  {/* Voice / player selector */}
-                  {Platform.OS === "ios" ? (
-                    <Host matchContents style={styles.selectorCardHost}>
-                      <Menu
-                        label={selectedPlayer
-                          ? displayPlayerLabel(selectedPlayer, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))
-                          : t("anime.noPlayers")}
-                        systemImage="mic"
-                      >
-                        {(playback?.players || []).map((playerOption) => (
-                          <SwiftButton
-                            key={playerOption.id}
-                            label={displayPlayerLabel(playerOption, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))}
-                            systemImage={playerOption.id === selectedPlayerId ? "checkmark.circle.fill" : undefined}
-                            onPress={() => void handleSelectPlayer(playerOption.id)}
-                          />
-                        ))}
-                      </Menu>
-                    </Host>
-                  ) : (
-                    <Pressable
-                      style={[styles.selectorCard, !hasPlayerOptions && styles.selectorCardDisabled]}
-                      onPress={() => hasPlayerOptions && setPlayerSheetPresented(true)}
-                      disabled={!hasPlayerOptions}
-                    >
-                      <View style={[styles.selectorCardIcon, { backgroundColor: theme.colors.accentSurface }]}>
-                        <Ionicons name="mic-outline" size={18} color={theme.colors.accent} />
-                      </View>
-                      <View style={styles.selectorCardBody}>
-                        <Text style={styles.selectorCardLabel}>{t("anime.selectVoice")}</Text>
-                        <Text style={styles.selectorCardValue} numberOfLines={1}>
-                          {selectedPlayer
-                            ? displayPlayerLabel(selectedPlayer, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))
-                            : t("anime.noPlayers")}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color={theme.colors.muted} />
-                    </Pressable>
-                  )}
+                        <View style={styles.selectorRowDivider} />
 
-                  {/* Quality selector */}
-                  {Platform.OS === "ios" ? (
-                    <Host matchContents style={styles.selectorCardHost}>
-                      <Menu
-                        label={selectedQuality
-                          ? `${selectedQuality}p`
-                          : hasQualityOptions
-                            ? t("anime.selectQuality")
-                            : t("anime.noQualities")}
-                        systemImage="4k.tv"
-                      >
-                        {qualityOptions.map((quality) => (
-                          <SwiftButton
-                            key={quality}
-                            label={`${quality}p`}
-                            systemImage={quality === (selectedQuality || effectiveQuality) ? "checkmark.circle.fill" : undefined}
-                            onPress={() => handleSelectQuality(quality)}
-                          />
-                        ))}
-                      </Menu>
-                    </Host>
-                  ) : (
-                    <Pressable
-                      style={[styles.selectorCard, !hasQualityOptions && styles.selectorCardDisabled]}
-                      onPress={() => hasQualityOptions && setQualitySheetPresented(true)}
-                      disabled={!hasQualityOptions}
-                    >
-                      <View style={[styles.selectorCardIcon, { backgroundColor: theme.colors.accentSurface }]}>
-                        <Ionicons name="film-outline" size={18} color={theme.colors.accent} />
+                        {/* Voice selector */}
+                        {Platform.OS === "ios" ? (
+                          <Host matchContents style={styles.selectorRowItem}>
+                            <Menu
+                              label={selectedPlayer
+                                ? displayPlayerLabel(selectedPlayer, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))
+                                : t("anime.noPlayers")}
+                              systemImage="mic"
+                            >
+                              {(playback?.players || []).map((playerOption) => (
+                                <SwiftButton
+                                  key={playerOption.id}
+                                  label={displayPlayerLabel(playerOption, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))}
+                                  systemImage={playerOption.id === selectedPlayerId ? "checkmark.circle.fill" : undefined}
+                                  onPress={() => void handleSelectPlayer(playerOption.id)}
+                                />
+                              ))}
+                            </Menu>
+                          </Host>
+                        ) : (
+                          <Pressable
+                            style={[styles.selectorRowItem, !hasPlayerOptions && styles.selectorRowItemDisabled]}
+                            onPress={() => hasPlayerOptions && setPlayerSheetPresented(true)}
+                            disabled={!hasPlayerOptions}
+                          >
+                            <Ionicons name="mic-outline" size={15} color={theme.colors.accent} />
+                            <Text style={styles.selectorRowText} numberOfLines={1}>
+                              {selectedPlayer
+                                ? selectedPlayer.teamName || t("anime.unknownTeam")
+                                : t("anime.noPlayers")}
+                            </Text>
+                          </Pressable>
+                        )}
+
+                        <View style={styles.selectorRowDivider} />
+
+                        {/* Quality selector */}
+                        {Platform.OS === "ios" ? (
+                          <Host matchContents style={styles.selectorRowItem}>
+                            <Menu
+                              label={selectedQuality
+                                ? `${selectedQuality}p`
+                                : hasQualityOptions
+                                  ? t("anime.selectQuality")
+                                  : t("anime.noQualities")}
+                              systemImage="4k.tv"
+                            >
+                              {qualityOptions.map((quality) => (
+                                <SwiftButton
+                                  key={quality}
+                                  label={`${quality}p`}
+                                  systemImage={quality === (selectedQuality || effectiveQuality) ? "checkmark.circle.fill" : undefined}
+                                  onPress={() => handleSelectQuality(quality)}
+                                />
+                              ))}
+                            </Menu>
+                          </Host>
+                        ) : (
+                          <Pressable
+                            style={[styles.selectorRowItem, !hasQualityOptions && styles.selectorRowItemDisabled]}
+                            onPress={() => hasQualityOptions && setQualitySheetPresented(true)}
+                            disabled={!hasQualityOptions}
+                          >
+                            <Ionicons name="film-outline" size={15} color={theme.colors.accent} />
+                            <Text style={styles.selectorRowText} numberOfLines={1}>
+                              {selectedQuality ? `${selectedQuality}p` : hasQualityOptions ? t("anime.selectQuality") : t("anime.noQualities")}
+                            </Text>
+                          </Pressable>
+                        )}
                       </View>
-                      <View style={styles.selectorCardBody}>
-                        <Text style={styles.selectorCardLabel}>{t("anime.selectQuality")}</Text>
-                        <Text style={styles.selectorCardValue} numberOfLines={1}>
-                          {selectedQuality
-                            ? `${selectedQuality}p`
-                            : hasQualityOptions
-                              ? t("anime.selectQuality")
-                              : t("anime.noQualities")}
-                        </Text>
+                    );
+
+                    if (useGlass) {
+                      return (
+                        <GlassContainer spacing={0} style={styles.selectorGlassContainer}>
+                          <GlassView style={styles.selectorGlassView} glassEffectStyle="regular">
+                            {row}
+                          </GlassView>
+                        </GlassContainer>
+                      );
+                    }
+                    return (
+                      <View style={[styles.selectorGlassView, { backgroundColor: theme.colors.panelSoft }]}>
+                        {row}
                       </View>
-                      <Ionicons name="chevron-forward" size={16} color={theme.colors.muted} />
-                    </Pressable>
-                  )}
+                    );
+                  })()}
 
                   {isOfflineOnly &&
                   offlineSelectedEpisodeProgress &&
@@ -3487,6 +3493,12 @@ export default function AnimeDetailsScreen() {
                         color={theme.colors.indicator}
                         size="large"
                       />
+                    ) : isOfflineOnly && offlineSelectedEpisodeProgress?.status === "completed" ? (
+                      // Download just completed but URI not resolved yet — show spinner
+                      <ActivityIndicator
+                        color={theme.colors.indicator}
+                        size="large"
+                      />
                     ) : isOfflineOnly ? (
                       <Text style={styles.emptyText}>
                         {language === "ru"
@@ -3566,12 +3578,23 @@ export default function AnimeDetailsScreen() {
       >
         <SafeAreaView style={styles.downloadSheetSafeArea} edges={["bottom"]}>
           <View style={styles.downloadSheetHeader}>
-            <Text style={styles.downloadSheetTitle}>
-              {t("anime.downloadEpisode")}
-            </Text>
-            <Text style={styles.downloadSheetSubtitle}>
-              {downloadSheetSelectedCountLabel}
-            </Text>
+            <View style={styles.downloadSheetHeaderRow}>
+              <View style={styles.downloadSheetHeaderLeft}>
+                <Text style={styles.downloadSheetTitle}>
+                  {t("anime.downloadEpisode")}
+                </Text>
+                <Text style={styles.downloadSheetSubtitle}>
+                  {downloadSheetSelectedCountLabel}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => handleDownloadSheetPresentedChange(false)}
+                hitSlop={8}
+                style={styles.downloadSheetCloseBtn}
+              >
+                <Ionicons name="close" size={20} color={theme.colors.muted} />
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView
@@ -4388,6 +4411,43 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
       color: theme.colors.text,
       fontSize: 15,
       fontWeight: "700",
+    },
+    // Inline row selectors with glass
+    selectorGlassContainer: {
+      width: "100%",
+    },
+    selectorGlassView: {
+      borderRadius: 16,
+      overflow: "hidden",
+    },
+    selectorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      height: 48,
+    },
+    selectorRowItem: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+      paddingHorizontal: 8,
+      height: "100%",
+    },
+    selectorRowItemDisabled: {
+      opacity: 0.4,
+    },
+    selectorRowText: {
+      flex: 1,
+      color: theme.colors.text,
+      fontSize: 13,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    selectorRowDivider: {
+      width: StyleSheet.hairlineWidth,
+      height: 24,
+      backgroundColor: theme.colors.border,
     },    nativePickerWrap: {
       borderRadius: 12,
       backgroundColor: theme.colors.panelSoft,
@@ -4485,22 +4545,29 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    downloadSheetHandle: {
-      alignItems: "center",
-      paddingTop: 10,
-      paddingBottom: 4,
-    },
-    downloadSheetHandleBar: {
-      width: 36,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: theme.colors.border,
-    },
     downloadSheetHeader: {
       paddingHorizontal: 20,
       paddingTop: 8,
       paddingBottom: 16,
+    },
+    downloadSheetHeaderRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    downloadSheetHeaderLeft: {
+      flex: 1,
       gap: 4,
+    },
+    downloadSheetCloseBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.colors.panelSoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 2,
     },
     downloadSheetTitle: {
       color: theme.colors.text,
