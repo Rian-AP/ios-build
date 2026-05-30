@@ -21,8 +21,7 @@ import {
     StyleSheet,
     Text,
     View,
-} from "react-native";
-import {
+} from "react-native";import {
     SafeAreaView,
     useSafeAreaInsets,
 } from "react-native-safe-area-context";
@@ -65,6 +64,7 @@ import {
 } from "@/lib/offlineDownloads";
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { Host, Menu, Button as SwiftButton } from "@expo/ui/swift-ui";
 
 const USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
@@ -3297,27 +3297,23 @@ export default function AnimeDetailsScreen() {
                   )}
 
                   {Platform.OS === "ios" ? (
-                    <Pressable
-                      style={[
-                        styles.nativeSelectorButton,
-                        !hasPlayerOptions &&
-                          styles.nativeSelectorButtonDisabled,
-                      ]}
-                      onPress={openPlayerSelector}
-                      disabled={!hasPlayerOptions}
-                    >
-                      <Text style={styles.nativeSelectorText} numberOfLines={1}>
-                        {selectedPlayer
-                          ? displayPlayerLabel(
-                              selectedPlayer,
-                              language,
-                              t("anime.unknownTeam"),
-                              t("anime.unknownTranslation"),
-                            )
+                    <Host matchContents style={styles.nativeSelectorButton}>
+                      <Menu
+                        label={selectedPlayer
+                          ? displayPlayerLabel(selectedPlayer, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))
                           : t("anime.noPlayers")}
-                      </Text>
-                      <Text style={styles.nativeSelectorChevron}>{"›"}</Text>
-                    </Pressable>
+                        systemImage="chevron.up.chevron.down"
+                      >
+                        {(playback?.players || []).map((playerOption) => (
+                          <SwiftButton
+                            key={playerOption.id}
+                            label={displayPlayerLabel(playerOption, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))}
+                            systemImage={playerOption.id === selectedPlayerId ? "checkmark" : undefined}
+                            onPress={() => void handleSelectPlayer(playerOption.id)}
+                          />
+                        ))}
+                      </Menu>
+                    </Host>
                   ) : (
                     <Pressable
                       style={[
@@ -3342,24 +3338,25 @@ export default function AnimeDetailsScreen() {
                   )}
 
                   {Platform.OS === "ios" ? (
-                    <Pressable
-                      style={[
-                        styles.nativeSelectorButton,
-                        !hasQualityOptions &&
-                          styles.nativeSelectorButtonDisabled,
-                      ]}
-                      onPress={openQualitySelector}
-                      disabled={!hasQualityOptions}
-                    >
-                      <Text style={styles.nativeSelectorText} numberOfLines={1}>
-                        {selectedQuality
+                    <Host matchContents style={styles.nativeSelectorButton}>
+                      <Menu
+                        label={selectedQuality
                           ? `${selectedQuality}p`
                           : hasQualityOptions
                             ? t("anime.selectQuality")
                             : t("anime.noQualities")}
-                      </Text>
-                      <Text style={styles.nativeSelectorChevron}>{"›"}</Text>
-                    </Pressable>
+                        systemImage="chevron.up.chevron.down"
+                      >
+                        {qualityOptions.map((quality) => (
+                          <SwiftButton
+                            key={quality}
+                            label={`${quality}p`}
+                            systemImage={quality === (selectedQuality || effectiveQuality) ? "checkmark" : undefined}
+                            onPress={() => handleSelectQuality(quality)}
+                          />
+                        ))}
+                      </Menu>
+                    </Host>
                   ) : (
                     <Pressable
                       style={[
@@ -3604,8 +3601,7 @@ export default function AnimeDetailsScreen() {
                       {"›"}
                     </Text>
                   ) : null}
-                </Pressable>
-              )}
+                </Pressable>              )}
             </View>
 
             <View style={styles.downloadSheetSection}>

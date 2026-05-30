@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { Session } from '@supabase/supabase-js';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -214,10 +215,8 @@ export default function AccountScreen() {
         options={{
           title: screen === 'profile' ? t('account.profile') : t('account.signIn'),
           headerRight: () => (
-            <Pressable onPress={() => router.back()} hitSlop={8}>
-              <Text style={{ color: theme.colors.accent, fontSize: 17, fontWeight: '600' }}>
-                {t('library.cancel')}
-              </Text>
+            <Pressable onPress={() => router.back()} hitSlop={8} style={{ padding: 4 }}>
+              <Ionicons name="close" size={22} color={theme.colors.accent} />
             </Pressable>
           ),
         }}
@@ -232,8 +231,27 @@ export default function AccountScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.avatar, { backgroundColor: theme.colors.accentSurface }]}>
-            <Ionicons name="person" size={48} color={theme.colors.accent} />
+          <View style={styles.avatar}>
+            <LinearGradient
+              colors={["#A8C1E1", "#7680BA"]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.avatarGradient}
+            >
+              {session?.user.email ? (
+                <Text style={styles.avatarInitials}>
+                  {(() => {
+                    const emailLocal = (session.user.email.split('@')[0] || '');
+                    const parts = emailLocal.split(/[._-]/);
+                    return parts.length >= 2
+                      ? (parts[0][0] + parts[1][0]).toUpperCase()
+                      : emailLocal.slice(0, 2).toUpperCase();
+                  })()}
+                </Text>
+              ) : (
+                <Ionicons name="person" size={40} color="#FFFFFF" />
+              )}
+            </LinearGradient>
           </View>
 
           <Text style={[styles.title, { color: theme.colors.text }]}>
@@ -376,10 +394,22 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
       width: 88,
       height: 88,
       borderRadius: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
+      overflow: 'hidden',
       marginTop: 16,
       marginBottom: 4,
+    },
+    avatarGradient: {
+      flex: 1,
+      width: '100%',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarInitials: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: 0.5,
     },
     title: {
       fontSize: 26,
