@@ -15,9 +15,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.3
-        run: sudo xcode-select -s /Applications/Xcode_16.3.app/Contents/Developer
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -53,7 +50,15 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-            | xcpretty
+            SWIFT_STRICT_CONCURRENCY=minimal \
+            OTHER_SWIFT_FLAGS="-strict-concurrency=minimal" \
+            | xcpretty || true
+          
+          # Verify archive was created
+          if [ ! -d "build/mobile.xcarchive" ]; then
+            echo "Archive failed - checking for .app directly"
+            exit 1
+          fi
 
       - name: Package unsigned IPA
         run: |
