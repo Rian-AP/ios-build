@@ -52,11 +52,11 @@ export function ScreenHeader({
               <Pressable
                 onPress={action.onPress}
                 hitSlop={8}
-                style={screenHeaderStyles.trashBtn}
+                style={screenHeaderStyles.trashBtnInner}
               >
                 <Ionicons
                   name="trash-outline"
-                  size={20}
+                  size={16}
                   color={theme.colors.accent}
                 />
               </Pressable>
@@ -256,10 +256,16 @@ const screenHeaderStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  trashBtnInner: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   trashGlass: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     overflow: "hidden",
   },
   accountBtn: {

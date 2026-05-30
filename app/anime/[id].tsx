@@ -1257,12 +1257,12 @@ export default function AnimeDetailsScreen() {
 
       // Direct MP4 — AVPlayer handles it natively from file://
       if (lowerUri.endsWith(".mp4")) {
-        return { uri: playbackUri, contentType: "mp4" } as const;
+        return { uri: playbackUri } as const;
       }
 
       // Single MPEG-TS segment — AVPlayer can play this from file://
       if (lowerUri.endsWith(".ts")) {
-        return { uri: playbackUri, contentType: "video/mp2t" } as const;
+        return { uri: playbackUri } as const;
       }
 
       // Local m3u8 — AVPlayer CANNOT play file:// m3u8.
@@ -1282,7 +1282,7 @@ export default function AnimeDetailsScreen() {
 
       return {
         uri: playbackUri,
-        contentType: "application/x-mpegURL",
+        contentType: "hls",
       } as const;
     }
 
@@ -3274,130 +3274,134 @@ export default function AnimeDetailsScreen() {
             >
               {!playerOnlyLaunchActive ? (
                 <View style={styles.playerControls}>
-                  {/* Three selectors in one row with Liquid Glass container */}
-                  {(() => {
-                    const useGlass = Platform.OS === 'ios' && isGlassEffectAPIAvailable();
-                    const row = (
-                      <View style={styles.selectorRow}>
-                        {/* Episode selector */}
-                        {Platform.OS === "ios" ? (
-                          <Host matchContents style={styles.selectorRowItem}>
-                            <Menu
-                              label={selectedEpisode
-                                ? displayEpisodeLabel(selectedEpisode, t("anime.episodeFallbackTitle", { number: selectedEpisode.episodeNumber }))
-                                : t("anime.openSelector")}
-                              systemImage="play.rectangle"
-                            >
-                              {(pageData?.episodes || []).map((episode) => (
-                                <SwiftButton
-                                  key={episode.id}
-                                  label={displayEpisodeLabel(episode, t("anime.episodeFallbackTitle", { number: episode.episodeNumber }))}
-                                  systemImage={episode.id === selectedEpisodeId ? "checkmark.circle.fill" : undefined}
-                                  onPress={() => handleSelectEpisode(episode)}
-                                />
-                              ))}
-                            </Menu>
-                          </Host>
-                        ) : (
-                          <Pressable style={styles.selectorRowItem} onPress={openEpisodeSelector}>
-                            <Ionicons name="play-circle-outline" size={15} color={theme.colors.accent} />
-                            <Text style={styles.selectorRowText} numberOfLines={1}>
-                              {selectedEpisode
-                                ? `#${selectedEpisode.episodeNumber}`
-                                : t("anime.selectEpisode")}
-                            </Text>
-                          </Pressable>
-                        )}
-
-                        <View style={styles.selectorRowDivider} />
-
-                        {/* Voice selector */}
-                        {Platform.OS === "ios" ? (
-                          <Host matchContents style={styles.selectorRowItem}>
-                            <Menu
-                              label={selectedPlayer
-                                ? displayPlayerLabel(selectedPlayer, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))
-                                : t("anime.noPlayers")}
-                              systemImage="mic"
-                            >
-                              {(playback?.players || []).map((playerOption) => (
-                                <SwiftButton
-                                  key={playerOption.id}
-                                  label={displayPlayerLabel(playerOption, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))}
-                                  systemImage={playerOption.id === selectedPlayerId ? "checkmark.circle.fill" : undefined}
-                                  onPress={() => void handleSelectPlayer(playerOption.id)}
-                                />
-                              ))}
-                            </Menu>
-                          </Host>
-                        ) : (
-                          <Pressable
-                            style={[styles.selectorRowItem, !hasPlayerOptions && styles.selectorRowItemDisabled]}
-                            onPress={() => hasPlayerOptions && setPlayerSheetPresented(true)}
-                            disabled={!hasPlayerOptions}
+                  {/* Three selectors in one row — each in its own rounded glass pill */}
+                  <View style={styles.selectorRow}>
+                    {/* Episode selector */}
+                    {(() => {
+                      const useGlass = Platform.OS === 'ios' && isGlassEffectAPIAvailable();
+                      const content = Platform.OS === "ios" ? (
+                        <Host style={StyleSheet.absoluteFill}>
+                          <Menu
+                            label={selectedEpisode
+                              ? `#${selectedEpisode.episodeNumber}`
+                              : t("anime.selectEpisode")}
+                            systemImage="play.rectangle"
                           >
-                            <Ionicons name="mic-outline" size={15} color={theme.colors.accent} />
-                            <Text style={styles.selectorRowText} numberOfLines={1}>
-                              {selectedPlayer
-                                ? selectedPlayer.teamName || t("anime.unknownTeam")
-                                : t("anime.noPlayers")}
-                            </Text>
-                          </Pressable>
-                        )}
-
-                        <View style={styles.selectorRowDivider} />
-
-                        {/* Quality selector */}
-                        {Platform.OS === "ios" ? (
-                          <Host matchContents style={styles.selectorRowItem}>
-                            <Menu
-                              label={selectedQuality
-                                ? `${selectedQuality}p`
-                                : hasQualityOptions
-                                  ? t("anime.selectQuality")
-                                  : t("anime.noQualities")}
-                              systemImage="4k.tv"
-                            >
-                              {qualityOptions.map((quality) => (
-                                <SwiftButton
-                                  key={quality}
-                                  label={`${quality}p`}
-                                  systemImage={quality === (selectedQuality || effectiveQuality) ? "checkmark.circle.fill" : undefined}
-                                  onPress={() => handleSelectQuality(quality)}
-                                />
-                              ))}
-                            </Menu>
-                          </Host>
-                        ) : (
-                          <Pressable
-                            style={[styles.selectorRowItem, !hasQualityOptions && styles.selectorRowItemDisabled]}
-                            onPress={() => hasQualityOptions && setQualitySheetPresented(true)}
-                            disabled={!hasQualityOptions}
-                          >
-                            <Ionicons name="film-outline" size={15} color={theme.colors.accent} />
-                            <Text style={styles.selectorRowText} numberOfLines={1}>
-                              {selectedQuality ? `${selectedQuality}p` : hasQualityOptions ? t("anime.selectQuality") : t("anime.noQualities")}
-                            </Text>
-                          </Pressable>
-                        )}
-                      </View>
-                    );
-
-                    if (useGlass) {
-                      return (
-                        <GlassContainer spacing={0} style={styles.selectorGlassContainer}>
-                          <GlassView style={styles.selectorGlassView} glassEffectStyle="regular">
-                            {row}
-                          </GlassView>
-                        </GlassContainer>
+                            {(pageData?.episodes || []).map((episode) => (
+                              <SwiftButton
+                                key={episode.id}
+                                label={displayEpisodeLabel(episode, t("anime.episodeFallbackTitle", { number: episode.episodeNumber }))}
+                                systemImage={episode.id === selectedEpisodeId ? "checkmark.circle.fill" : undefined}
+                                onPress={() => handleSelectEpisode(episode)}
+                              />
+                            ))}
+                          </Menu>
+                        </Host>
+                      ) : (
+                        <Pressable style={styles.selectorPillInner} onPress={openEpisodeSelector}>
+                          <Ionicons name="play-circle-outline" size={14} color={theme.colors.accent} />
+                          <Text style={styles.selectorPillText} numberOfLines={1}>
+                            {selectedEpisode ? `#${selectedEpisode.episodeNumber}` : t("anime.selectEpisode")}
+                          </Text>
+                        </Pressable>
                       );
-                    }
-                    return (
-                      <View style={[styles.selectorGlassView, { backgroundColor: theme.colors.panelSoft }]}>
-                        {row}
-                      </View>
-                    );
-                  })()}
+                      return useGlass ? (
+                        <GlassView style={styles.selectorPill} glassEffectStyle="regular" isInteractive>
+                          {content}
+                        </GlassView>
+                      ) : (
+                        <View style={[styles.selectorPill, { backgroundColor: theme.colors.panelSoft }]}>
+                          {content}
+                        </View>
+                      );
+                    })()}
+
+                    {/* Voice selector */}
+                    {(() => {
+                      const useGlass = Platform.OS === 'ios' && isGlassEffectAPIAvailable();
+                      const content = Platform.OS === "ios" ? (
+                        <Host style={StyleSheet.absoluteFill}>
+                          <Menu
+                            label={selectedPlayer
+                              ? (selectedPlayer.teamName || t("anime.unknownTeam"))
+                              : t("anime.noPlayers")}
+                            systemImage="mic"
+                          >
+                            {(playback?.players || []).map((playerOption) => (
+                              <SwiftButton
+                                key={playerOption.id}
+                                label={displayPlayerLabel(playerOption, language, t("anime.unknownTeam"), t("anime.unknownTranslation"))}
+                                systemImage={playerOption.id === selectedPlayerId ? "checkmark.circle.fill" : undefined}
+                                onPress={() => void handleSelectPlayer(playerOption.id)}
+                              />
+                            ))}
+                          </Menu>
+                        </Host>
+                      ) : (
+                        <Pressable
+                          style={[styles.selectorPillInner, !hasPlayerOptions && styles.selectorPillDisabled]}
+                          onPress={() => hasPlayerOptions && setPlayerSheetPresented(true)}
+                          disabled={!hasPlayerOptions}
+                        >
+                          <Ionicons name="mic-outline" size={14} color={theme.colors.accent} />
+                          <Text style={styles.selectorPillText} numberOfLines={1}>
+                            {selectedPlayer ? (selectedPlayer.teamName || t("anime.unknownTeam")) : t("anime.noPlayers")}
+                          </Text>
+                        </Pressable>
+                      );
+                      return useGlass ? (
+                        <GlassView style={[styles.selectorPill, !hasPlayerOptions && styles.selectorPillDisabled]} glassEffectStyle="regular" isInteractive>
+                          {content}
+                        </GlassView>
+                      ) : (
+                        <View style={[styles.selectorPill, { backgroundColor: theme.colors.panelSoft }, !hasPlayerOptions && styles.selectorPillDisabled]}>
+                          {content}
+                        </View>
+                      );
+                    })()}
+
+                    {/* Quality selector */}
+                    {(() => {
+                      const useGlass = Platform.OS === 'ios' && isGlassEffectAPIAvailable();
+                      const content = Platform.OS === "ios" ? (
+                        <Host style={StyleSheet.absoluteFill}>
+                          <Menu
+                            label={selectedQuality ? `${selectedQuality}p` : hasQualityOptions ? t("anime.selectQuality") : t("anime.noQualities")}
+                            systemImage="4k.tv"
+                          >
+                            {qualityOptions.map((quality) => (
+                              <SwiftButton
+                                key={quality}
+                                label={`${quality}p`}
+                                systemImage={quality === (selectedQuality || effectiveQuality) ? "checkmark.circle.fill" : undefined}
+                                onPress={() => handleSelectQuality(quality)}
+                              />
+                            ))}
+                          </Menu>
+                        </Host>
+                      ) : (
+                        <Pressable
+                          style={[styles.selectorPillInner, !hasQualityOptions && styles.selectorPillDisabled]}
+                          onPress={() => hasQualityOptions && setQualitySheetPresented(true)}
+                          disabled={!hasQualityOptions}
+                        >
+                          <Ionicons name="film-outline" size={14} color={theme.colors.accent} />
+                          <Text style={styles.selectorPillText} numberOfLines={1}>
+                            {selectedQuality ? `${selectedQuality}p` : hasQualityOptions ? t("anime.selectQuality") : t("anime.noQualities")}
+                          </Text>
+                        </Pressable>
+                      );
+                      return useGlass ? (
+                        <GlassView style={[styles.selectorPill, !hasQualityOptions && styles.selectorPillDisabled]} glassEffectStyle="regular" isInteractive>
+                          {content}
+                        </GlassView>
+                      ) : (
+                        <View style={[styles.selectorPill, { backgroundColor: theme.colors.panelSoft }, !hasQualityOptions && styles.selectorPillDisabled]}>
+                          {content}
+                        </View>
+                      );
+                    })()}
+                  </View>
 
                   {isOfflineOnly &&
                   offlineSelectedEpisodeProgress &&
@@ -4423,26 +4427,46 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
     selectorRow: {
       flexDirection: "row",
       alignItems: "center",
-      height: 48,
+      gap: 8,
     },
-    selectorRowItem: {
+    selectorPill: {
       flex: 1,
+      height: 44,
+      borderRadius: 16,
+      overflow: "hidden",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    selectorPillInner: {
+      flex: 1,
+      width: "100%",
+      height: "100%",
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 5,
-      paddingHorizontal: 8,
-      height: "100%",
+      paddingHorizontal: 10,
     },
-    selectorRowItemDisabled: {
-      opacity: 0.4,
-    },
-    selectorRowText: {
+    selectorPillText: {
       flex: 1,
       color: theme.colors.text,
       fontSize: 13,
       fontWeight: "600",
       textAlign: "center",
+    },
+    selectorPillDisabled: {
+      opacity: 0.4,
+    },
+    selectorRowItem: {
+      flex: 1,
+    },
+    selectorRowItemDisabled: {
+      opacity: 0.4,
+    },
+    selectorRowText: {
+      color: theme.colors.text,
+      fontSize: 13,
+      fontWeight: "600",
     },
     selectorRowDivider: {
       width: StyleSheet.hairlineWidth,
@@ -4543,7 +4567,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
     },
     downloadSheetSafeArea: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.panel,
     },
     downloadSheetHeader: {
       paddingHorizontal: 20,
