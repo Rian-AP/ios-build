@@ -49,10 +49,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            | xcpretty
+            2>&1 | tee build/xcodebuild.log | grep -E "error:|warning:|ARCHIVE|PhaseScript|Invalid|Cannot|SyntaxError|Metro|bundle" || true
           
           if [ ! -d "build/mobile.xcarchive" ]; then
-            echo "Archive failed"
+            echo "=== FULL BUILD LOG (last 100 lines) ==="
+            tail -100 build/xcodebuild.log
             exit 1
           fi
 
