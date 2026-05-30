@@ -151,6 +151,16 @@ function AppNavigator() {
           }}
         />
         <Stack.Screen
+          name="download-modal"
+          options={{
+            presentation: "modal",
+            headerShown: true,
+            headerStyle: { backgroundColor: theme.colors.background },
+            headerTintColor: theme.colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
           name="anime/[id]"
           options={{
             title: "",

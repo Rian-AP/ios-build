@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -835,13 +836,25 @@ export default function HomeScreen() {
               <View style={styles.sectionHeaderMain}>
                 <SectionHeader title={t("tabs.continueWatching")} />
               </View>
-              <Pressable
-                style={styles.historyClearAction}
-                onPress={handleClearHistory}
-                hitSlop={8}
-              >
-                <Ionicons name="trash-outline" size={20} color={theme.colors.accent} />
-              </Pressable>
+              {Platform.OS === 'ios' && isGlassEffectAPIAvailable() ? (
+                <GlassView style={styles.historyClearGlass} glassEffectStyle="regular" isInteractive>
+                  <Pressable
+                    style={styles.historyClearAction}
+                    onPress={handleClearHistory}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={theme.colors.accent} />
+                  </Pressable>
+                </GlassView>
+              ) : (
+                <Pressable
+                  style={styles.historyClearAction}
+                  onPress={handleClearHistory}
+                  hitSlop={8}
+                >
+                  <Ionicons name="trash-outline" size={20} color={theme.colors.accent} />
+                </Pressable>
+              )}
             </View>
 
             <ScrollView
@@ -1084,10 +1097,16 @@ const createStyles = (theme: ReturnType<typeof useTheme>) =>
       minWidth: 0,
     },
     historyClearAction: {
-      width: 44,
-      height: 44,
+      width: 32,
+      height: 32,
       alignItems: "center",
       justifyContent: "center",
+    },
+    historyClearGlass: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      overflow: "hidden",
     },
     historyClearActionText: {
       color: theme.colors.accentSoft,

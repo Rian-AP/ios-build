@@ -66,6 +66,7 @@ import {
 import { useTheme } from "@/lib/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { Host, Menu, Button as SwiftButton } from "@expo/ui/swift-ui";
+import { buttonStyle, foregroundColor } from "@expo/ui/swift-ui/modifiers";
 
 const USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
@@ -2468,54 +2469,21 @@ export default function AnimeDetailsScreen() {
 
   const handleOpenDownloadMenu = useCallback(() => {
     if (!pageData?.details) return;
-
     triggerImpactHaptic(Haptics.ImpactFeedbackStyle.Light);
 
-    const defaultEpisodeId =
-      selectedEpisodeId || pageData.episodes[0]?.id || null;
+    const defaultEpisodeId = selectedEpisodeId || pageData.episodes[0]?.id || null;
 
-    setDownloadFlowLoading(true);
-    setDownloadSheetMetaLoading(true);
-    setDownloadSheetEpisodeIds(defaultEpisodeId ? [defaultEpisodeId] : []);
-    setDownloadSheetTeamSlug(selectedTeamSlug || null);
-    setDownloadSheetQuality(effectiveQuality || null);
-    setDownloadSheetPlayers([]);
-    setDownloadSheetQualities([]);
-    setDownloadSheetAllEpisodes(pageData.episodes);
-    setDownloadSheetPresented(true);
-
-    // In offline mode — also fetch full episode list from API in background
-    if (isOfflineOnly) {
-      void api.episodesByAnimeId(pageData.details.animeId).then((allEps) => {
-        if (allEps.length > 0) {
-          setDownloadSheetAllEpisodes(allEps);
-          if (!defaultEpisodeId) {
-            const firstId = allEps[0]?.id;
-            if (firstId) setDownloadSheetEpisodeIds([firstId]);
-          }
-        }
-      }).catch(() => {});
-    }
-
-    if (defaultEpisodeId) {
-      void syncDownloadSheetMeta(
-        defaultEpisodeId,
-        selectedTeamSlug || null,
-        effectiveQuality || null,
-      ).finally(() => setDownloadFlowLoading(false));
-    } else {
-      setDownloadFlowLoading(false);
-      setDownloadSheetMetaLoading(false);
-    }
-  }, [
-    effectiveQuality,
-    isOfflineOnly,
-    pageData?.details,
-    pageData?.episodes,
-    selectedEpisodeId,
-    selectedTeamSlug,
-    syncDownloadSheetMeta,
-  ]);
+    // Open as native modal screen instead of bottom sheet
+    router.push({
+      pathname: "/download-modal" as any,
+      params: {
+        animeId: slug,
+        episodeId: defaultEpisodeId || "",
+        teamSlug: selectedTeamSlug || "",
+        quality: effectiveQuality || "",
+      },
+    });
+  }, [effectiveQuality, pageData?.details, pageData?.episodes, router, selectedEpisodeId, selectedTeamSlug, slug]);
 
   // Kept for reference but no longer used as a separate entry point
   const handleOpenOfflineDownloadMenu = handleOpenDownloadMenu;
@@ -3282,10 +3250,8 @@ export default function AnimeDetailsScreen() {
                       const content = Platform.OS === "ios" ? (
                         <Host style={StyleSheet.absoluteFill}>
                           <Menu
-                            label={selectedEpisode
-                              ? `#${selectedEpisode.episodeNumber}`
-                              : t("anime.selectEpisode")}
-                            systemImage="play.rectangle"
+                            label={selectedEpisode ? `#${selectedEpisode.episodeNumber}` : t("anime.selectEpisode")}
+                            modifiers={[buttonStyle('plain'), foregroundColor(theme.colors.accent)]}
                           >
                             {(pageData?.episodes || []).map((episode) => (
                               <SwiftButton
@@ -3322,10 +3288,8 @@ export default function AnimeDetailsScreen() {
                       const content = Platform.OS === "ios" ? (
                         <Host style={StyleSheet.absoluteFill}>
                           <Menu
-                            label={selectedPlayer
-                              ? (selectedPlayer.teamName || t("anime.unknownTeam"))
-                              : t("anime.noPlayers")}
-                            systemImage="mic"
+                            label={selectedPlayer ? (selectedPlayer.teamName || t("anime.unknownTeam")) : t("anime.noPlayers")}
+                            modifiers={[buttonStyle('plain'), foregroundColor(theme.colors.accent)]}
                           >
                             {(playback?.players || []).map((playerOption) => (
                               <SwiftButton
@@ -3367,7 +3331,7 @@ export default function AnimeDetailsScreen() {
                         <Host style={StyleSheet.absoluteFill}>
                           <Menu
                             label={selectedQuality ? `${selectedQuality}p` : hasQualityOptions ? t("anime.selectQuality") : t("anime.noQualities")}
-                            systemImage="4k.tv"
+                            modifiers={[buttonStyle('plain'), foregroundColor(theme.colors.accent)]}
                           >
                             {qualityOptions.map((quality) => (
                               <SwiftButton
