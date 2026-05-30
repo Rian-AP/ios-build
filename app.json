@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.austinpaw.mobile",
       "infoPlist": {
-        "UIDesignRequiresCompatibility": true
+        "UIDesignRequiresCompatibility": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
