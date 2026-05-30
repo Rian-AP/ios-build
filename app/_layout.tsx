@@ -4,6 +4,7 @@ import * as SystemUI from "expo-system-ui";
 import { useEffect, useRef } from "react";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Platform } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -170,6 +171,18 @@ function AppNavigator() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Start local proxy server for offline HLS playback on iOS.
+    // AVPlayer cannot play local file:// m3u8 playlists, but it CAN
+    // play http://localhost — the proxy serves cached segments transparently.
+    if (Platform.OS === 'ios') {
+      import('expo-video-cache').then(({ startServer }) => {
+        startServer(9000, 512 * 1024 * 1024) // 512MB cache limit
+          .catch(() => {}); // ignore if already running
+      }).catch(() => {});
+    }
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppThemeProvider>

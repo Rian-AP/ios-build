@@ -33,10 +33,29 @@ jobs:
       - name: Expo Prebuild (generate native iOS project)
         run: npx expo prebuild --platform ios --clean --non-interactive
 
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ios/Pods
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
       - name: Install CocoaPods
         run: |
           cd ios
-          pod install --repo-update
+          pod install
+
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: derived-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock', 'package-lock.json') }}
+          restore-keys: |
+            derived-${{ runner.os }}-
 
       - name: Build unsigned archive
         run: |
@@ -49,7 +68,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            2>&1 | tee build/xcodebuild.log | grep -E "error:|warning:|ARCHIVE|PhaseScript|Invalid|Cannot|SyntaxError|Metro|bundle" || true
+            2>&1 | tee build/xcodebuild.log | grep -E "error:|ARCHIVE|PhaseScript|Invalid|Cannot|SyntaxError|Metro|bundle" || true
           
           if [ ! -d "build/mobile.xcarchive" ]; then
             echo "=== FULL BUILD LOG (last 100 lines) ==="

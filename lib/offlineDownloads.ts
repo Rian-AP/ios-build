@@ -869,7 +869,9 @@ export async function resolveOfflinePlaylistUri(
       // Percent-encode "@" in the URI so iOS AVPlayer's NSURL(string:) doesn't
       // mistake it for a userinfo separator (e.g. "/@anonymous/" in the Expo
       // sandbox). The underlying OS file access decodes "%40" back to "@".
-      const playerSafeUri = uri.replace(/@/g, "%40");
+      // NOTE: Only encode if the path actually contains "@" to avoid
+      // double-encoding already-encoded URIs.
+      const playerSafeUri = uri.includes('@') ? uri.replace(/@/g, "%40") : uri;
 
       return {
         uri: playerSafeUri,

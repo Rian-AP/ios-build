@@ -16,6 +16,7 @@
     "@react-native-community/slider": "5.1.2",
     "@react-native-picker/picker": "2.11.4",
     "@supabase/supabase-js": "2.49.9",
+    "expo-video-cache": "^1.0.0",
     "expo": "~55.0.24",
     "expo-blur": "~55.0.14",
     "expo-constants": "~55.0.16",
